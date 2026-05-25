@@ -46,6 +46,16 @@ This platform fetches **live global disaster data**, stores it in a **SQL databa
 Live API Data → Feature Engineering → SQLite Database → Random Forest → Dashboard
 
 ---
+## 🤖 Model Performance
+
+| Metric | Score |
+|--------|-------|
+| Accuracy | 84.2% |
+| F1 Score (weighted) | 81.8% |
+| Model | Random Forest Classifier |
+| Features Used | disaster type, month, weekday, is_weekend, is_recent |
+| Training Data | 95 disaster events |
+| Test Split | 80/20 |
 ## 🚀 Run Locally
 
 ```bash
