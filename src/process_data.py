@@ -39,6 +39,36 @@ def process_data():
     df['is_high_alert'] = (df['severity_encoded'] >= 2).astype(int)
     df['is_recent']     = (df['year'] >= 2024).astype(int)
 
+    # ── Step 6: Calculate Risk Score ───────────────────
+    print("\n Step 6: Calculating Risk Score...")
+    
+    # Severity weight
+    severity_weight = df['severity_encoded'].map({0: 1, 1: 2, 2: 3}).fillna(1)
+    
+    # Disaster type weight
+    type_weight = pd.Series(1, index=df.index)
+    if 'type_TC' in df.columns:
+        type_weight += df['type_TC'] * 2  # Cyclone most dangerous
+    if 'type_FL' in df.columns:
+        type_weight += df['type_FL'] * 1.5  # Flood second
+    if 'type_EQ' in df.columns:
+        type_weight += df['type_EQ'] * 1.5  # Earthquake second
+    if 'type_DR' in df.columns:
+        type_weight += df['type_DR'] * 1  # Drought
+    if 'type_VO' in df.columns:
+        type_weight += df['type_VO'] * 1.2  # Volcano
+    if 'type_WF' in df.columns:
+        type_weight += df['type_WF'] * 1.3  # Wildfire
+
+    # Recency weight
+    recency_weight = df['is_recent'].map({1: 1.5, 0: 1})
+
+    # Final Risk Score (normalized to 0-100)
+    raw_score = severity_weight * type_weight * recency_weight
+    df['risk_score'] = ((raw_score - raw_score.min()) / 
+                        (raw_score.max() - raw_score.min()) * 100).round(1)
+    
+    print(f"Risk scores calculated! Range: {df['risk_score'].min()} - {df['risk_score'].max()}")
     # ── Save Processed Data ────────────────────────────
     os.makedirs("data/processed", exist_ok=True)
     df.to_csv("data/processed/crisis_processed.csv", index=False)
