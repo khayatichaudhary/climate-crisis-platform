@@ -1,0 +1,15 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.env
+venv/
+
+# Data & Model files (too large for git)
+database/model.pkl
+data/*.csv
+data/*.pkl
+
+# OS files
+.DS_Store
+Thumbs.db
