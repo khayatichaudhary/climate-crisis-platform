@@ -4,7 +4,7 @@
 [![Python](https://img.shields.io/badge/Python-3.13-blue?style=for-the-badge&logo=python)](https://python.org)
 [![ML](https://img.shields.io/badge/ML-Random%20Forest-green?style=for-the-badge&logo=scikit-learn)](https://scikit-learn.org)
 
-> **A real-time global disaster monitoring platform powered by Machine Learning, SQL, and live API data.**
+> **A global disaster monitoring platform powered by Machine Learning, SQL, and GDACS API data.**
 
 🔗 **Live App:** https://climate-crisis-platform.streamlit.app/
 
@@ -32,7 +32,7 @@ This platform fetches **live global disaster data**, stores it in a **SQL databa
 
 ## 🔥 Key Features
 
-- 🌐 **Live Data Pipeline** — fetches real disaster data from GDACS API
+- 🌐 **Data Pipeline** — fetches disaster data from GDACS API, processed and stored in SQLite
 - 🗄️ **SQL Backend** — stores and queries data using SQLite
 - 🤖 **ML Severity Predictor** — predicts crisis severity using Random Forest
 - 🗺️ **Interactive World Map** — visualizes disasters globally with severity colors
