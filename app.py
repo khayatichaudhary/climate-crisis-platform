@@ -190,7 +190,7 @@ with col4:
 st.subheader("🚨 Top 5 Most Dangerous Disasters Right Now")
 
 if 'risk_score' not in filtered_df.columns:
-    filtered_df['risk_score'] = filtered_df['severity_encoded'] * 33.3
+    filtered_df['risk_score'] = 0.0
 
 top5 = filtered_df.nlargest(5, 'risk_score')[['title', 'country', 'severity', 'risk_score']]
 
