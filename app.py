@@ -224,23 +224,8 @@ st.subheader("🗺️ Global Disaster Map")
 
 @st.cache_data
 def get_coordinates():
-    coords = {
-        'Afghanistan': (33.93, 67.71),
-        'Indonesia': (-0.79, 113.92),
-        'Brazil': (-14.24, -51.93),
-        'Kenya': (-0.02, 37.91),
-        'Japan': (36.20, 138.25),
-        'China': (35.86, 104.19),
-        'Madagascar': (-18.77, 46.87),
-        'Angola': (-11.20, 17.87),
-        'Argentina': (-38.42, -63.62),
-        'Mexico': (23.63, -102.55),
-        'Russia': (61.52, 105.32),
-        'Philippines': (12.88, 121.77),
-        'India': (20.59, 78.96),
-        'USA': (37.09, -95.71),
-        'Australia': (-25.27, 133.77),
-    }
+    coords_df = pd.read_csv("data/country_coordinates.csv")
+    coords = dict(zip(coords_df["country"], zip(coords_df["lat"], coords_df["lon"])))
     return coords
 
 coords = get_coordinates()
@@ -248,6 +233,12 @@ coords = get_coordinates()
 map_df = filtered_df.copy()
 map_df['lat'] = map_df['country'].map(lambda x: coords.get(x, (None, None))[0])
 map_df['lon'] = map_df['country'].map(lambda x: coords.get(x, (None, None))[1])
+
+# Show user which countries were dropped
+missing = map_df[map_df['lat'].isna()]['country'].unique()
+if len(missing) > 0:
+    st.warning(f"⚠️ {len(missing)} countries not found on map: {', '.join(missing)}")
+
 map_df = map_df.dropna(subset=['lat', 'lon'])
 
 color_map_severity = {'Red': 'red', 'Orange': 'orange', 'Green': 'green'}
@@ -374,9 +365,7 @@ with col3:
     predict_btn = st.button("🔮 Predict Severity", use_container_width=True)
 
 if predict_btn:
-    import pickle
-    import numpy as np
-
+    
     with open("database/model.pkl", "rb") as f:
         model = pickle.load(f)
 
