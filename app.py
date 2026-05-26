@@ -305,7 +305,7 @@ with col1:
     fig1 = px.bar(type_counts, x='Type', y='Count',
               color='Count', color_continuous_scale='Reds',
               template="plotly_dark")
-    fig1.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)")
+    fig1.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font=dict(color='#ffffff'), xaxis=dict(color='#ffffff'), yaxis=dict(color='#ffffff'), coloraxis_colorbar=dict(tickfont=dict(color='#ffffff'), title=dict(font=dict(color='#ffffff'))))
     st.plotly_chart(fig1, use_container_width=True)
     # Citation box explaining disaster type codes
     st.markdown("""
@@ -329,7 +329,7 @@ with col2:
     fig2 = px.pie(severity_counts, values='Count', names='Severity',
               color='Severity', color_discrete_map=color_map,
               template="plotly_dark")
-    fig2.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)")
+    fig2.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font=dict(color='#ffffff'), legend=dict(font=dict(color='#ffffff')))
     st.plotly_chart(fig2, use_container_width=True)
 # ── Charts Row 2 ───────────────────────────────────
 col1, col2 = st.columns(2)
@@ -340,7 +340,7 @@ with col1:
     fig3 = px.line(monthly, x='month', y='count', markers=True,
                color_discrete_sequence=['#ff4444'],
                template="plotly_dark")
-    fig3.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)")
+    fig3.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font=dict(color='#ffffff'), xaxis=dict(color='#ffffff'), yaxis=dict(color='#ffffff'))
     st.plotly_chart(fig3, use_container_width=True)
 
 with col2:
@@ -352,7 +352,7 @@ with col2:
               orientation='h', color='Count',
               color_continuous_scale='Reds',
               template="plotly_dark")
-    fig4.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)")
+    fig4.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font=dict(color='#ffffff'), xaxis=dict(color='#ffffff'), yaxis=dict(color='#ffffff'), coloraxis_colorbar=dict(tickfont=dict(color='#ffffff'), title=dict(font=dict(color='#ffffff'))))
     st.plotly_chart(fig4, use_container_width=True)
 
 st.divider()
