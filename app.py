@@ -303,7 +303,9 @@ with col1:
     type_counts.columns = ['Type', 'Count']
     type_counts['Type'] = type_counts['Type'].str.replace('type_', '')
     fig1 = px.bar(type_counts, x='Type', y='Count',
-                  color='Count', color_continuous_scale='Reds')
+              color='Count', color_continuous_scale='Reds',
+              template="plotly_dark")
+    fig1.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)")
     st.plotly_chart(fig1, use_container_width=True)
     # Citation box explaining disaster type codes
     st.markdown("""
@@ -325,9 +327,10 @@ with col2:
     severity_counts.columns = ['Severity', 'Count']
     color_map = {'Red': '#ff4444', 'Orange': '#ff8800', 'Green': '#00cc44'}
     fig2 = px.pie(severity_counts, values='Count', names='Severity',
-                  color='Severity', color_discrete_map=color_map)
+              color='Severity', color_discrete_map=color_map,
+              template="plotly_dark")
+    fig2.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)")
     st.plotly_chart(fig2, use_container_width=True)
-
 # ── Charts Row 2 ───────────────────────────────────
 col1, col2 = st.columns(2)
 
@@ -335,7 +338,9 @@ with col1:
     st.subheader("📅 Events by Month")
     monthly = filtered_df.groupby('month').size().reset_index(name='count')
     fig3 = px.line(monthly, x='month', y='count', markers=True,
-                   color_discrete_sequence=['#ff4444'])
+               color_discrete_sequence=['#ff4444'],
+               template="plotly_dark")
+    fig3.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)")
     st.plotly_chart(fig3, use_container_width=True)
 
 with col2:
@@ -344,8 +349,10 @@ with col2:
     country_counts = high_alert['country'].value_counts().head(10).reset_index()
     country_counts.columns = ['Country', 'Count']
     fig4 = px.bar(country_counts, x='Count', y='Country',
-                  orientation='h', color='Count',
-                  color_continuous_scale='Reds')
+              orientation='h', color='Count',
+              color_continuous_scale='Reds',
+              template="plotly_dark")
+    fig4.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)")
     st.plotly_chart(fig4, use_container_width=True)
 
 st.divider()
@@ -431,7 +438,8 @@ with col1:
 
 with col2:
     type_input = st.selectbox("Disaster Type", ["EQ", "FL", "DR", "TC", "VO", "WF"])
-    is_recent = st.selectbox("Is Recent (2024+)?", [1, 0])
+    is_recent_toggle = st.toggle("Is Recent (2024+)?", value=True)
+    is_recent = 1 if is_recent_toggle else 0
 
 with col3:
     st.markdown("###")
