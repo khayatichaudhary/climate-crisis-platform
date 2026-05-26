@@ -1,6 +1,10 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
+import requests
+import os
+from dotenv import load_dotenv
+load_dotenv()
 import plotly.express as px
 import plotly.graph_objects as go
 import sqlite3
@@ -8,6 +12,7 @@ import pickle
 from src.database import query_db
 from src.fetch_data import fetch_crisis_data
 from src.process_data import process_data
+
 
 # ── Page Config ────────────────────────────────────
 st.set_page_config(
@@ -300,6 +305,19 @@ with col1:
     fig1 = px.bar(type_counts, x='Type', y='Count',
                   color='Count', color_continuous_scale='Reds')
     st.plotly_chart(fig1, use_container_width=True)
+    # Citation box explaining disaster type codes
+    st.markdown("""
+    <div style="background:#161b22; border:1px solid #30363d; border-radius:10px; padding:16px; margin-top:10px;">
+      <p style="color:#ff8800; font-weight:bold; margin-bottom:8px;">📖 What do these codes mean?</p>
+      <p style="color:#c9d1d9; font-size:0.85rem; margin:3px 0;"><span style="background:#ff4444; color:white; padding:1px 7px; border-radius:5px; font-size:0.8rem;">EQ</span> &nbsp;<b>Earthquake</b> — Sudden shaking of the ground due to tectonic plate movement.</p>
+      <p style="color:#c9d1d9; font-size:0.85rem; margin:3px 0;"><span style="background:#ff4444; color:white; padding:1px 7px; border-radius:5px; font-size:0.8rem;">FL</span> &nbsp;<b>Flood</b> — Overflow of water onto normally dry land from heavy rain or rivers.</p>
+      <p style="color:#c9d1d9; font-size:0.85rem; margin:3px 0;"><span style="background:#ff4444; color:white; padding:1px 7px; border-radius:5px; font-size:0.8rem;">DR</span> &nbsp;<b>Drought</b> — Long period of low rainfall causing water and food scarcity.</p>
+      <p style="color:#c9d1d9; font-size:0.85rem; margin:3px 0;"><span style="background:#ff4444; color:white; padding:1px 7px; border-radius:5px; font-size:0.8rem;">TC</span> &nbsp;<b>Tropical Cyclone</b> — Rotating storm with strong winds. Called Hurricane or Typhoon in other regions.</p>
+      <p style="color:#c9d1d9; font-size:0.85rem; margin:3px 0;"><span style="background:#ff4444; color:white; padding:1px 7px; border-radius:5px; font-size:0.8rem;">VO</span> &nbsp;<b>Volcano</b> — Eruption of magma and ash from Earth's crust.</p>
+      <p style="color:#c9d1d9; font-size:0.85rem; margin:3px 0;"><span style="background:#ff4444; color:white; padding:1px 7px; border-radius:5px; font-size:0.8rem;">WF</span> &nbsp;<b>Wildfire</b> — Uncontrolled fire spreading through forests or grasslands.</p>
+      <p style="color:#8b949e; font-size:0.75rem; margin-top:10px; margin-bottom:0;">Source: <a href="https://www.gdacs.org" target="_blank" style="color:#1f6feb;">GDACS — Global Disaster Alert and Coordination System</a></p>
+    </div>
+    """, unsafe_allow_html=True)
 
 with col2:
     st.subheader("🚨 Severity Distribution")
@@ -334,11 +352,61 @@ st.divider()
 
 # ── SQL Query Section ──────────────────────────────
 st.subheader("🗄️ Live SQL Query Explorer")
-st.markdown("Write your own SQL query on the crisis database!")
 
-default_query = "SELECT country, severity, title FROM crisis_events WHERE is_high_alert = 1 ORDER BY severity DESC LIMIT 10"
+# --- NL to SQL helper function ---
+def nl_to_sql(natural_language_query):
+    TABLE_SCHEMA = """
+    Table: crisis_events
+    Columns: id, title, country, severity (Red/Orange/Green), risk_score (float),
+             month (int 1-12), is_recent (0 or 1), is_high_alert (0 or 1),
+             type_EQ, type_FL, type_DR, type_TC, type_VO, type_WF (all 0 or 1, 1 means that type)
+    """
+    from config import GROQ_API_KEY
+    api_key = GROQ_API_KEY
+    payload = {
+        "model": "llama-3.3-70b-versatile",
+        "messages": [{
+            "role": "user",
+            "content": f"""You are a SQL expert. Convert this to a valid SQLite SQL query.
+Schema: {TABLE_SCHEMA}
+Query: {natural_language_query}
+Rules: Return ONLY the SQL, no explanation, no backticks. Always use LIMIT 50."""
+        }]
+    }
+    response = requests.post(
+        "https://api.groq.com/openai/v1/chat/completions",
+        headers={
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {api_key}"
+        },
+        json=payload,
+        timeout=15
+    )
+    data = response.json()
+    if "error" in data:
+        raise Exception(f"API Error: {data['error']['message']}")
+
+    sql = data["choices"][0]["message"]["content"].strip()
+    return sql.replace("```sql", "").replace("```", "").strip()
+
+# --- Natural language input ---
+st.markdown("#### 💬 Don't know SQL? Just describe what you want!")
+nl_input = st.text_input("Plain English Query", placeholder='e.g. "Show all red alert floods" or "Which country has the most disasters?"')
+
+generated_sql = None
+if nl_input:
+    with st.spinner("🤖 Converting to SQL..."):
+        try:
+            generated_sql = nl_to_sql(nl_input)
+            st.success("✅ SQL generated — you can edit it below before running!")
+        except Exception as e:
+            st.error(f"❌ {e}")
+            generated_sql = None
+
+default_query = generated_sql if generated_sql else \
+    "SELECT country, severity, title FROM crisis_events WHERE is_high_alert = 1 ORDER BY severity DESC LIMIT 10"
+
 user_query = st.text_area("SQL Query", value=default_query, height=100)
-
 if st.button("▶️ Run Query"):
     try:
         result = query_db(user_query)
@@ -378,12 +446,37 @@ if predict_btn:
     input_array = np.array(features).reshape(1, -1)
 
     prediction = model.predict(input_array)[0]
+
     severity_map = {
-        0: ("🟢 Green", "Low risk — situation is manageable"),
-        1: ("🟠 Orange", "Medium risk — monitor closely"),
-        2: ("🔴 Red", "High risk — immediate action needed!")
+        0: ("🟢 Green", "Low risk — situation is manageable", "#00cc44"),
+        1: ("🟠 Orange", "Medium risk — monitor closely", "#ff8800"),
+        2: ("🔴 Red", "High risk — immediate action needed!", "#ff4444"),
     }
 
-    label, message = severity_map.get(prediction, ("Unknown", ""))
+    label, message, color = severity_map.get(prediction, ("Unknown", "", "#ffffff"))
     st.success(f"**Predicted Severity: {label}**")
     st.info(f"💡 {message}")
+
+    # --- Confidence Score ---
+    st.markdown("#### 📊 Model Confidence")
+    proba = model.predict_proba(input_array)[0]   # gives [prob_green, prob_orange, prob_red]
+    classes = model.classes_                       # gives [0, 1, 2]
+
+    severity_colors = {0: "#00cc44", 1: "#ff8800", 2: "#ff4444"}
+    severity_names  = {0: "🟢 Green", 1: "🟠 Orange", 2: "🔴 Red"}
+
+    for i, cls in enumerate(classes):
+        pct = round(proba[i] * 100, 1)
+        clr = severity_colors[cls]
+        name = severity_names[cls]
+        st.markdown(f"""
+        <div style="margin-bottom:12px;">
+          <div style="display:flex; justify-content:space-between;">
+            <span style="color:{clr}; font-weight:bold;">{name}</span>
+            <span style="color:{clr}; font-weight:bold;">{pct}%</span>
+          </div>
+          <div style="background:#0e1117; border-radius:6px; height:12px; margin-top:4px;">
+            <div style="width:{int(pct)}%; background:{clr}; height:12px; border-radius:6px;"></div>
+          </div>
+        </div>
+        """, unsafe_allow_html=True)
