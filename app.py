@@ -361,8 +361,12 @@ def nl_to_sql(natural_language_query):
              month (int 1-12), is_recent (0 or 1), is_high_alert (0 or 1),
              type_EQ, type_FL, type_DR, type_TC, type_VO, type_WF (all 0 or 1, 1 means that type)
     """
-    from config import GROQ_API_KEY
-    api_key = GROQ_API_KEY
+    try:
+        from config import GROQ_API_KEY
+        api_key = GROQ_API_KEY
+    except ImportError:
+        import os
+        api_key = os.environ.get("GROQ_API_KEY", "")
     payload = {
         "model": "llama-3.3-70b-versatile",
         "messages": [{
