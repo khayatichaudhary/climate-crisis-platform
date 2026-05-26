@@ -5,6 +5,35 @@ import requests
 import os
 from dotenv import load_dotenv
 load_dotenv()
+GDACS_NAME_MAP = {
+    "Viet Nam": "Vietnam",
+    "Korea, Republic of": "South Korea",
+    "Korea, Dem. People's Rep.": "North Korea",
+    "Congo, Dem. Rep.": "Democratic Republic of the Congo",
+    "Congo, Rep.": "Republic of the Congo",
+    "Tanzania, United Republic of": "Tanzania",
+    "Iran, Islamic Republic of": "Iran",
+    "Syrian Arab Republic": "Syria",
+    "Lao PDR": "Laos",
+    "Bolivia, Plurinational State of": "Bolivia",
+    "Venezuela, Bolivarian Republic of": "Venezuela",
+    "Moldova, Republic of": "Moldova",
+    "Micronesia, Federated States of": "Micronesia",
+    "Timor-Leste": "East Timor",
+    "Cabo Verde": "Cape Verde",
+    "Eswatini": "Swaziland",
+    "Côte d'Ivoire": "Ivory Coast",
+    "Türkiye": "Turkey",
+    "Brunei Darussalam": "Brunei",
+    "Myanmar": "Myanmar",
+    "Russian Federation": "Russia",
+    "United States of America": "United States",
+    "United Kingdom of Great Britain and Northern Ireland": "United Kingdom",
+    "Czechia": "Czech Republic",
+    "North Macedonia": "Macedonia",
+    "Palestine, State of": "Palestine",
+    "Philippines": "Philippines",  # already correct but explicit
+}
 import plotly.express as px
 import plotly.graph_objects as go
 import sqlite3
@@ -236,16 +265,18 @@ def get_coordinates():
 
 coords = get_coordinates()
 
+
+
+
 map_df = filtered_df.copy()
-map_df['lat'] = map_df['country'].map(lambda x: coords.get(x, (None, None))[0])
-map_df['lon'] = map_df['country'].map(lambda x: coords.get(x, (None, None))[1])
+# Normalize GDACS country names before coordinate lookup
+map_df['country_normalized'] = map_df['country'].replace(GDACS_NAME_MAP)
+map_df['lat'] = map_df['country_normalized'].map(lambda x: coords.get(x, (None, None))[0])
+map_df['lon'] = map_df['country_normalized'].map(lambda x: coords.get(x, (None, None))[1])
 
-# Show user which countries were dropped
-missing = map_df[map_df['lat'].isna()]['country'].unique()
-if len(missing) > 0:
-    st.warning(f"⚠️ {len(missing)} countries not found on map: {', '.join(missing)}")
-
+# Silent drop — no warning shown to users
 map_df = map_df.dropna(subset=['lat', 'lon'])
+
 
 color_map_severity = {'Red': 'red', 'Orange': 'orange', 'Green': 'green'}
 
@@ -343,10 +374,23 @@ with col1:
     fig3.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font=dict(color='#ffffff'), xaxis=dict(color='#ffffff'), yaxis=dict(color='#ffffff'))
     st.plotly_chart(fig3, use_container_width=True)
 
+
 with col2:
     st.subheader("🔴 Top Countries by High Alert")
     high_alert = filtered_df[filtered_df['is_high_alert'] == 1]
-    country_counts = high_alert['country'].value_counts().head(10).reset_index()
+    
+    # Split "Viet Nam, Philippines, Laos" → individual countries, then count
+    country_counts = (
+        high_alert['country']
+        .dropna()
+        .str.split(',')          # split on comma
+        .explode()               # one row per country
+        .str.strip()             # remove spaces
+        .replace(GDACS_NAME_MAP) # normalize names (same map from Fix 1)
+        .value_counts()
+        .head(10)
+        .reset_index()
+    )
     country_counts.columns = ['Country', 'Count']
     fig4 = px.bar(country_counts, x='Count', y='Country',
               orientation='h', color='Count',
